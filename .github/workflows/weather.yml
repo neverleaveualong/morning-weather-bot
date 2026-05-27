@@ -1,9 +1,6 @@
 name: weather
 
 on:
-  push:
-    branches:
-      - master
   schedule:
     # 08:00 KST = 23:00 UTC on the previous day.
     - cron: "0 23 * * *"
