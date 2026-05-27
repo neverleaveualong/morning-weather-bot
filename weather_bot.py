@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
@@ -227,7 +228,12 @@ def fetch_today_events():
     if not ical_url:
         return []
 
-    calendar = Calendar.from_ical(request_bytes(ical_url))
+    try:
+        calendar = Calendar.from_ical(request_bytes(ical_url))
+    except (urllib.error.URLError, ValueError) as error:
+        print(f"Calendar fetch skipped: {error}")
+        return []
+
     tz = ZoneInfo(TIMEZONE)
     today = datetime.now(tz).date()
     start_of_day = datetime.combine(today, time.min, tzinfo=tz)
