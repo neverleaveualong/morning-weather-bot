@@ -2,12 +2,12 @@
 
 Open-Meteo API, Google Calendar iCal, Telegram Bot API를 사용해 매일 아침 날씨와 오늘 일정을 텔레그램으로 보내는 서버리스 알림 봇입니다.
 
-서버를 계속 켜둘 필요 없이 GitHub Actions cron으로 정해진 시간에 실행됩니다. 기본 구성은 오늘 일정, 원주와 서울의 현재 날씨, 오늘 시간별 날씨, 내일 오전/오후 요약을 전송합니다.
+서버를 계속 켜둘 필요 없이 GitHub Actions cron으로 정해진 시간에 실행됩니다. 기본 구성은 오늘/내일 할일, 원주와 서울의 현재 날씨, 오늘 시간별 날씨, 내일 오전/오후 요약을 전송합니다.
 
 ## Features
 
 - 여러 지역 현재 날씨 조회
-- Google Calendar iCal 기반 오늘 일정 조회
+- Google Calendar iCal 기반 오늘/내일 할일 조회
 - 오늘 날씨 3시간 단위 요약
 - 내일 날씨 오전/오후 요약
 - 텔레그램 모바일에서 읽기 쉬운 줄바꿈 포맷
@@ -22,6 +22,10 @@ Open-Meteo API, Google Calendar iCal, Telegram Bot API를 사용해 매일 아�
 [오늘 할일]
 - 09:00 · 프론트 작업
 - 14:00 · 주간회의
+
+[내일 할일]
+- 10:00 · 면접 준비
+- 16:00 · 코드 리뷰
 
 [지금]
 원주 18° · 체감 18° · 흐림

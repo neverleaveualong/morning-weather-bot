@@ -223,20 +223,24 @@ def as_local_datetime(value, default_time):
     raise TypeError(f"Unsupported calendar date type: {type(value)}")
 
 
-def fetch_today_events():
+def fetch_calendar():
     ical_url = os.getenv("GOOGLE_CALENDAR_ICAL_URL")
     if not ical_url:
-        return []
+        return None
 
     try:
-        calendar = Calendar.from_ical(request_bytes(ical_url))
+        return Calendar.from_ical(request_bytes(ical_url))
     except (urllib.error.URLError, ValueError) as error:
         print(f"Calendar fetch skipped: {error}")
+        return None
+
+
+def extract_events_for_date(calendar, target_date):
+    if calendar is None:
         return []
 
     tz = ZoneInfo(TIMEZONE)
-    today = datetime.now(tz).date()
-    start_of_day = datetime.combine(today, time.min, tzinfo=tz)
+    start_of_day = datetime.combine(target_date, time.min, tzinfo=tz)
     end_of_day = start_of_day + timedelta(days=1)
     events = []
 
@@ -262,8 +266,8 @@ def fetch_today_events():
     return sorted(events, key=lambda event: (event["start"], event["summary"]))
 
 
-def format_events_section(events):
-    lines = ["[오늘 일정]"]
+def format_events_section(title, events):
+    lines = [f"[{title}]"]
     if not events:
         lines.append("등록된 일정 없음")
         return lines
@@ -280,12 +284,19 @@ def format_events_section(events):
 
 
 def format_message(weather_by_location):
-    now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%m/%d %H:%M")
-    events = fetch_today_events()
+    now_dt = datetime.now(ZoneInfo(TIMEZONE))
+    now = now_dt.strftime("%m/%d %H:%M")
+    calendar = fetch_calendar()
+    today_events = extract_events_for_date(calendar, now_dt.date())
+    tomorrow_events = extract_events_for_date(
+        calendar, now_dt.date() + timedelta(days=1)
+    )
     lines = [
         f"🌤 {BOT_TITLE} ({now})",
         "",
-        *format_events_section(events),
+        *format_events_section("오늘 할일", today_events),
+        "",
+        *format_events_section("내일 할일", tomorrow_events),
         "",
         "[지금]",
     ]
