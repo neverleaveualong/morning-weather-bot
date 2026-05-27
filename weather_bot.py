@@ -21,6 +21,7 @@ LOCATIONS = [
 ]
 
 TIMEZONE = "Asia/Seoul"
+BOT_TITLE = os.getenv("WEATHER_BOT_TITLE") or "오늘의 날씨봇"
 
 WEATHER_LABELS = {
     0: "맑음",
@@ -207,7 +208,7 @@ def format_period_line(location_weather, key):
 def format_message(weather_by_location):
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%m/%d %H:%M")
     lines = [
-        f"🌤 우현님을 위한 날씨봇 ({now})",
+        f"🌤 {BOT_TITLE} ({now})",
         "",
         "[지금]",
     ]
