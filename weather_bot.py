@@ -4,9 +4,10 @@ import sys
 import urllib.parse
 import urllib.request
 from collections import Counter
-from datetime import datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
+from icalendar import Calendar
 from dotenv import load_dotenv
 
 
@@ -90,6 +91,11 @@ WEATHER_SEVERITY = {
 def request_json(url):
     with urllib.request.urlopen(url, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def request_bytes(url):
+    with urllib.request.urlopen(url, timeout=20) as response:
+        return response.read()
 
 
 def build_open_meteo_url(location):
@@ -205,10 +211,75 @@ def format_period_line(location_weather, key):
     )
 
 
+def as_local_datetime(value, default_time):
+    tz = ZoneInfo(TIMEZONE)
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=tz)
+        return value.astimezone(tz)
+    if isinstance(value, date):
+        return datetime.combine(value, default_time, tzinfo=tz)
+    raise TypeError(f"Unsupported calendar date type: {type(value)}")
+
+
+def fetch_today_events():
+    ical_url = os.getenv("GOOGLE_CALENDAR_ICAL_URL")
+    if not ical_url:
+        return []
+
+    calendar = Calendar.from_ical(request_bytes(ical_url))
+    tz = ZoneInfo(TIMEZONE)
+    today = datetime.now(tz).date()
+    start_of_day = datetime.combine(today, time.min, tzinfo=tz)
+    end_of_day = start_of_day + timedelta(days=1)
+    events = []
+
+    for component in calendar.walk("VEVENT"):
+        summary = str(component.get("summary", "제목 없음")).strip()
+        start_value = component.decoded("dtstart")
+        end_value = component.decoded("dtend", start_value)
+        start_dt = as_local_datetime(start_value, time.min)
+        end_dt = as_local_datetime(end_value, time.max)
+
+        if end_dt <= start_of_day or start_dt >= end_of_day:
+            continue
+
+        is_all_day = isinstance(start_value, date) and not isinstance(start_value, datetime)
+        events.append(
+            {
+                "summary": summary,
+                "start": start_dt,
+                "all_day": is_all_day,
+            }
+        )
+
+    return sorted(events, key=lambda event: (event["start"], event["summary"]))
+
+
+def format_events_section(events):
+    lines = ["[오늘 일정]"]
+    if not events:
+        lines.append("등록된 일정 없음")
+        return lines
+
+    for event in events[:8]:
+        if event["all_day"]:
+            lines.append(f"- 종일 · {event['summary']}")
+        else:
+            lines.append(f"- {event['start'].strftime('%H:%M')} · {event['summary']}")
+
+    if len(events) > 8:
+        lines.append(f"- 외 {len(events) - 8}개 일정")
+    return lines
+
+
 def format_message(weather_by_location):
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%m/%d %H:%M")
+    events = fetch_today_events()
     lines = [
         f"🌤 {BOT_TITLE} ({now})",
+        "",
+        *format_events_section(events),
         "",
         "[지금]",
     ]
