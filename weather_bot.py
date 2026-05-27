@@ -12,7 +12,7 @@ from icalendar import Calendar
 from dotenv import load_dotenv
 
 
-load_dotenv()
+load_dotenv(encoding="utf-8-sig")
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
@@ -23,7 +23,8 @@ LOCATIONS = [
 ]
 
 TIMEZONE = "Asia/Seoul"
-BOT_TITLE = os.getenv("WEATHER_BOT_TITLE") or "오늘의 날씨봇"
+MORNING_REPORT_TITLE = os.getenv("WEATHER_BOT_TITLE") or "우현님을 위한 아침 보고"
+EVENING_REPORT_TITLE = os.getenv("EVENING_REPORT_TITLE") or "우현님을 위한 내일 보고"
 
 WEATHER_LABELS = {
     0: "맑음",
@@ -283,24 +284,15 @@ def format_events_section(title, events):
     return lines
 
 
-def format_message(weather_by_location):
-    now_dt = datetime.now(ZoneInfo(TIMEZONE))
-    now = now_dt.strftime("%m/%d %H:%M")
-    calendar = fetch_calendar()
-    today_events = extract_events_for_date(calendar, now_dt.date())
-    tomorrow_events = extract_events_for_date(
-        calendar, now_dt.date() + timedelta(days=1)
-    )
-    lines = [
-        f"🌤 {BOT_TITLE} ({now})",
-        "",
-        *format_events_section("오늘 할일", today_events),
-        "",
-        *format_events_section("내일 할일", tomorrow_events),
-        "",
-        "[지금]",
-    ]
+def report_mode(now_dt):
+    mode = (os.getenv("REPORT_MODE") or "").strip().lower()
+    if mode in {"morning", "evening"}:
+        return mode
+    return "evening" if now_dt.hour >= 18 else "morning"
 
+
+def append_today_weather(lines, weather_by_location):
+    lines.append("[지금]")
     for weather in weather_by_location:
         current = weather["current"]
         lines.append(
@@ -330,8 +322,9 @@ def format_message(weather_by_location):
                 f"{point['weather']} · 비 {point['rain_probability']}%"
             )
 
-    lines.append("")
-    lines.append("[내일]")
+
+def append_tomorrow_weather(lines, weather_by_location):
+    lines.append("[내일 날씨]")
     for title, key in [("오전", "tomorrow_am"), ("오후", "tomorrow_pm")]:
         lines.append(title)
         for weather in weather_by_location:
@@ -341,6 +334,34 @@ def format_message(weather_by_location):
                 f"{data['weather']} · 비 {data['rain_probability']}% · "
                 f"{format_mm(data['precipitation'])}"
             )
+
+
+def format_message(weather_by_location):
+    now_dt = datetime.now(ZoneInfo(TIMEZONE))
+    now = now_dt.strftime("%m/%d %H:%M")
+    mode = report_mode(now_dt)
+    calendar = fetch_calendar()
+    today_events = extract_events_for_date(calendar, now_dt.date())
+    tomorrow_events = extract_events_for_date(
+        calendar, now_dt.date() + timedelta(days=1)
+    )
+
+    if mode == "evening":
+        lines = [
+            f"🌙 {EVENING_REPORT_TITLE} ({now})",
+            "",
+            *format_events_section("내일 할일", tomorrow_events),
+            "",
+        ]
+        append_tomorrow_weather(lines, weather_by_location)
+    else:
+        lines = [
+            f"🌤 {MORNING_REPORT_TITLE} ({now})",
+            "",
+            *format_events_section("오늘 할일", today_events),
+            "",
+        ]
+        append_today_weather(lines, weather_by_location)
 
     return "\n".join(lines)
 

@@ -4,6 +4,8 @@ on:
   schedule:
     # 08:00 KST = 23:00 UTC on the previous day.
     - cron: "0 23 * * *"
+    # 20:00 KST = 11:00 UTC.
+    - cron: "0 11 * * *"
   workflow_dispatch:
 
 jobs:
@@ -26,5 +28,6 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           WEATHER_BOT_TITLE: ${{ secrets.WEATHER_BOT_TITLE }}
+          EVENING_REPORT_TITLE: ${{ secrets.EVENING_REPORT_TITLE }}
           GOOGLE_CALENDAR_ICAL_URL: ${{ secrets.GOOGLE_CALENDAR_ICAL_URL }}
         run: python weather_bot.py

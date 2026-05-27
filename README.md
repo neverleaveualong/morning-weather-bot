@@ -2,14 +2,14 @@
 
 Open-Meteo API, Google Calendar iCal, Telegram Bot API를 사용해 매일 아침 날씨와 오늘 일정을 텔레그램으로 보내는 서버리스 알림 봇입니다.
 
-서버를 계속 켜둘 필요 없이 GitHub Actions cron으로 정해진 시간에 실행됩니다. 기본 구성은 오늘/내일 할일, 원주와 서울의 현재 날씨, 오늘 시간별 날씨, 내일 오전/오후 요약을 전송합니다.
+서버를 계속 켜둘 필요 없이 GitHub Actions cron으로 정해진 시간에 실행됩니다. 오전 8시에는 오늘 할일과 오늘 날씨를, 오후 8시에는 내일 할일과 내일 날씨를 전송합니다.
 
 ## Features
 
 - 여러 지역 현재 날씨 조회
 - Google Calendar iCal 기반 오늘/내일 할일 조회
-- 오늘 날씨 3시간 단위 요약
-- 내일 날씨 오전/오후 요약
+- 오전 8시: 오늘 할일 + 현재 날씨 + 오늘 3시간 단위 날씨
+- 오후 8시: 내일 할일 + 내일 오전/오후 날씨
 - 텔레그램 모바일에서 읽기 쉬운 줄바꿈 포맷
 - GitHub Actions 수동 실행 및 자동 실행 지원
 - Open-Meteo API Key 불필요
@@ -17,15 +17,11 @@ Open-Meteo API, Google Calendar iCal, Telegram Bot API를 사용해 매일 아�
 ## Message Format
 
 ```text
-🌤 오늘의 날씨봇 (05/27 08:00)
+🌤 우현님을 위한 아침 보고 (05/27 08:00)
 
 [오늘 할일]
 - 09:00 · 프론트 작업
 - 14:00 · 주간회의
-
-[내일 할일]
-- 10:00 · 면접 준비
-- 16:00 · 코드 리뷰
 
 [지금]
 원주 18° · 체감 18° · 흐림
@@ -69,7 +65,8 @@ Create `.env` in the project root:
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
-WEATHER_BOT_TITLE=오늘의 날씨봇
+WEATHER_BOT_TITLE=우현님을 위한 아침 보고
+EVENING_REPORT_TITLE=우현님을 위한 내일 보고
 GOOGLE_CALENDAR_ICAL_URL=your_google_calendar_private_ical_url
 ```
 
@@ -94,14 +91,16 @@ Add these repository secrets:
 
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
-- `WEATHER_BOT_TITLE` optional, if you want a custom title
+- `WEATHER_BOT_TITLE` optional, if you want a custom morning title
+- `EVENING_REPORT_TITLE` optional, if you want a custom evening title
 - `GOOGLE_CALENDAR_ICAL_URL` optional, if you want today's calendar events
 
-The workflow runs every day at 08:00 KST:
+The workflow runs every day at 08:00 and 20:00 KST:
 
 ```yaml
 schedule:
   - cron: "0 23 * * *"
+  - cron: "0 11 * * *"
 ```
 
 Manual test is available from:
